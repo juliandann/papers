@@ -7,19 +7,9 @@ import matplotlib
 from matplotlib.markers import MarkerStyle
 from matplotlib.legend import Legend
 from matplotlib.lines import Line2D
+from SAR_gen_functions import *
 
 start_time = time.time()
-def dist(lat1, long1, lat2, long2):
-    '''distance calculator on plane'''
-    return np.sqrt((lat1-lat2)**2.0+ (long1-long2)**2.0)
-
-def find_SAR_pixel(df,lat, long,export_rows):
-    '''function that grabs the closest SAR pixel to the hydrosense measurement'''
-    distances = df.apply(
-        lambda row: dist(lat, long, row['lat'], row['lon']),
-        axis=1)
-    return df.loc[distances.idxmin(), export_rows]
-
 def compare_discrete_vs_hydrosense(ABoVE_file,VWC_file,depth='20',combine=False):
     '''This function is meant to take the ABoVE SAR values with discrete measurements at 6,12,20 cm and compare with the hydrosense data'''
 
@@ -148,8 +138,15 @@ def main():
     df.to_csv('Z:/AKSeward/2017_SAR/ABoVE_Soil_Moisture_Products/JBD_Products/discrete_all_sites.csv')
     '''
     VWC_data= 'Z:/AKSeward/Data/Excel/SAR/discrete_data_final_20190306.csv'
-    compare_discrete_vs_hydrosense(ABoVE_data,VWC_data,depth=['6','12','20'],combine=True)
+    #compare_discrete_vs_hydrosense(ABoVE_data,VWC_data,depth=['6','12','20'],combine=True)
 
+    df1 = pd.read_csv(ABoVE_data,sep=',')
+
+    df2 = pd.read_csv(VWC_data,sep=',')
+    df1['point'] = [(x, y) for x,y in zip(df1['lat'], df1['lon'])]
+    df2['point'] = [(x, y) for x,y in zip(df2['lat'], df2['lon'])]
+    df2['above_lat'],df2['above_lon'] = df1.loc[[closest_point_index(x, list(df1['point'])) for x in df2['point']],['lat','lon']]
+    df2.to_csv('Z:/JDann/Documents/Documents/Julian_Python/SAR_Programs_20181003/test.csv',sep=',')
 
     print("--- %s seconds ---" % (time.time() - start_time))
 if __name__ == "__main__":
