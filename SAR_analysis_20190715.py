@@ -1,13 +1,18 @@
 import numpy as np
 import pandas as pd
+import matplotlib
+matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 import xarray as xr
 import time
-import matplotlib
+
 from matplotlib.markers import MarkerStyle
 from matplotlib.legend import Legend
 from matplotlib.lines import Line2D
 from SAR_gen_functions import *
+import glob
+import geopy.distance
+
 
 start_time = time.time()
 def compare_discrete_vs_hydrosense(ABoVE_file,VWC_file,depth='20',combine=False):
@@ -118,36 +123,82 @@ def compare_discrete_vs_hydrosense(ABoVE_file,VWC_file,depth='20',combine=False)
     #plt.close()
 
 def main():
-    #read in all cropped files
+    '''
+    #uncomment for filepaths on work computer
     TL = 'Z:/AKSeward/2017_SAR/ABoVE_Soil_Moisture_Products/JBD_Products/discrete_6_12_20_TL.csv'
     KG ='Z:/AKSeward/2017_SAR/ABoVE_Soil_Moisture_Products/JBD_Products/discrete_6_12_20_KG.csv'
     CN = 'Z:/AKSeward/2017_SAR/ABoVE_Soil_Moisture_Products/JBD_Products/discrete_6_12_20_CN.csv'
     BW ='Z:/AKSeward/2017_SAR/ABoVE_Soil_Moisture_Products/JBD_Products/discrete_6_12_20_BW.csv'
     ABoVE_data = 'Z:/AKSeward/2017_SAR/ABoVE_Soil_Moisture_Products/JBD_Products/discrete_all_sites.csv'
-
-    #uncomment for making combined file
-    '''
-    sites = [TL,KG,CN,BW]
-    list = []
-    for i in sites:
-        df = pd.read_csv(i)
-        list.append(df)
-
-    df = pd.concat(list,ignore_index=True)
-    print(df)
-    df.to_csv('Z:/AKSeward/2017_SAR/ABoVE_Soil_Moisture_Products/JBD_Products/discrete_all_sites.csv')
-    '''
     VWC_data= 'Z:/AKSeward/Data/Excel/SAR/discrete_data_final_20190306.csv'
-    #compare_discrete_vs_hydrosense(ABoVE_data,VWC_data,depth=['6','12','20'],combine=True)
+    '''
 
-    df1 = pd.read_csv(ABoVE_data,sep=',')
+    # uncomment for filepaths on personal computer
+    TL = '/Users/juliandann/Documents/LANL/SAR_DATA_AND_Programs/20190719/discrete_6_12_20_TL.csv'
+    KG ='/Users/juliandann/Documents/LANL/SAR_DATA_AND_Programs/20190719/discrete_6_12_20_KG.csv'
+    CN = '/Users/juliandann/Documents/LANL/SAR_DATA_AND_Programs/20190719/discrete_6_12_20_CN.csv'
+    BW ='/Users/juliandann/Documents/LANL/SAR_DATA_AND_Programs/20190719/discrete_6_12_20_BW.csv'
+    ABoVE_data = '/Users/juliandann/Documents/LANL/SAR_DATA_AND_Programs/20190719/discrete_all_sites.csv'
+    VWC_data = '/Users/juliandann/Documents/LANL/SAR_DATA_AND_Programs/20190719/all_vwc_combined.csv'
+    closest_pts = '/Users/juliandann/Documents/LANL/SAR_DATA_AND_Programs/20190719/closest_points.csv'
+    closest_dist = '/Users/juliandann/Documents/LANL/SAR_DATA_AND_Programs/20190719/closest_distance.csv'
 
-    df2 = pd.read_csv(VWC_data,sep=',')
+    '''
+    #uncomment for making combined files
+    files = [TL,KG,CN,BW]
+    csv_combined_file_maker(files,combined_filepath='/Users/juliandann/Documents/LANL/SAR_DATA_AND_Programs/20190719/discrete_all_sites.csv')
+
+
+    vwc_files = glob.glob('/Users/juliandann/Documents/LANL/SAR_DATA_AND_Programs/SAR_DATA_AND_Programs/data/vwc*.csv')
+    csv_combined_file_maker(vwc_files,combined_filepath='/Users/juliandann/Documents/LANL/SAR_DATA_AND_Programs/20190719/all_vwc_combined.csv')
+    '''
+    #read in the data
+    df1 = pd.read_csv(VWC_data,sep=',')
+    df2 = pd.read_csv(ABoVE_data,sep=',')
+    '''
+    #calculate closest point in df2 to the value in df1
+    df1 = closest_point_index(df1,df2,'Latitude','Longitude','lat','lon','lat','lon','0.06','0.12','0.2',prefix='above')
+
+    #saving for speed
+    df1.to_csv('/Users/juliandann/Documents/LANL/SAR_DATA_AND_Programs/20190719/closest_points.csv')
+    '''
+
+
+
+    #calulating distance between coordinates
+    df1['dist'] = df1.apply(lambda x: distancer(x['Latitude'],x['Longitude'],x['above_lat'],x['above_lon']), axis=1)
+
+    #df1.to_csv('/Users/juliandann/Documents/LANL/SAR_DATA_AND_Programs/20190719/closest_distance.csv')
+
+    df1 = pd.read_csv(closest_dist,sep=',')
+
+    #plotting 6cm vwc vs. above 6cm closest pixel
+    df_6cm = df1[df1['VWC_Measurement_Depth']==6]
+    df_6cm['VWC'] =df_6cm['VWC']/100.0
+
+    df_12cm = df1[df1['VWC_Measurement_Depth']==12]
+    df_12cm['VWC'] =df_12cm['VWC']/100.0
+
+    df_20cm = df1[df1['VWC_Measurement_Depth']==20]
+    df_20cm['VWC'] =df_20cm['VWC']/100.0
+
+
+    df1.dist.hist()
+    '''
+    ax= df_6cm.plot(x='VWC',y='above_0.06',label='6 cm',kind='scatter')
+    df_12cm.plot( x='VWC',y='above_0.12',color='g',ax = ax,label='12 cm',kind='scatter')
+    df_20cm.plot( x='VWC',y='above_0.2',color='r',ax = ax,label='20 cm',kind='scatter')
+
+    plt.xlim(0,1)
+    plt.ylim(0,1)
+    '''
+    plt.show()
+    '''
     df1['point'] = [(x, y) for x,y in zip(df1['lat'], df1['lon'])]
     df2['point'] = [(x, y) for x,y in zip(df2['lat'], df2['lon'])]
     df2['above_lat'],df2['above_lon'] = df1.loc[[closest_point_index(x, list(df1['point'])) for x in df2['point']],['lat','lon']]
     df2.to_csv('Z:/JDann/Documents/Documents/Julian_Python/SAR_Programs_20181003/test.csv',sep=',')
-
+    '''
     print("--- %s seconds ---" % (time.time() - start_time))
 if __name__ == "__main__":
     main()
