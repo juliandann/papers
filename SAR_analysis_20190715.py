@@ -5,7 +5,6 @@ matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 import xarray as xr
 import time
-
 from matplotlib.markers import MarkerStyle
 from matplotlib.legend import Legend
 from matplotlib.lines import Line2D
@@ -157,19 +156,17 @@ def main():
     df2 = pd.read_csv(ABoVE_data,sep=',')
     '''
     #calculate closest point in df2 to the value in df1
-    df1 = closest_point_index(df1,df2,'Latitude','Longitude','lat','lon','lat','lon','0.06','0.12','0.2',prefix='above')
+    df1 = closest_point_index(df1,df2,'Latitude','Longitude','lat','lon','lat','lon','0.06','0.12','0.2','Index',prefix='above')
 
     #saving for speed
-    df1.to_csv('/Users/juliandann/Documents/LANL/SAR_DATA_AND_Programs/20190719/closest_points.csv')
-    '''
-
+    #df1.to_csv('/Users/juliandann/Documents/LANL/SAR_DATA_AND_Programs/20190719/closest_points.csv')
 
 
     #calulating distance between coordinates
-    df1['dist'] = df1.apply(lambda x: distancer(x['Latitude'],x['Longitude'],x['above_lat'],x['above_lon']), axis=1)
+    df1 = distance_calc(df1,'Latitude','Longitude','above_lat','above_lon','dist')
 
-    #df1.to_csv('/Users/juliandann/Documents/LANL/SAR_DATA_AND_Programs/20190719/closest_distance.csv')
-
+    df1.to_csv('/Users/juliandann/Documents/LANL/SAR_DATA_AND_Programs/20190719/closest_distance.csv')
+    '''
     df1 = pd.read_csv(closest_dist,sep=',')
 
     #plotting 6cm vwc vs. above 6cm closest pixel
@@ -182,8 +179,8 @@ def main():
     df_20cm = df1[df1['VWC_Measurement_Depth']==20]
     df_20cm['VWC'] =df_20cm['VWC']/100.0
 
+    average_SM_at_pixel(df1,'above_Index')
 
-    df1.dist.hist()
     '''
     ax= df_6cm.plot(x='VWC',y='above_0.06',label='6 cm',kind='scatter')
     df_12cm.plot( x='VWC',y='above_0.12',color='g',ax = ax,label='12 cm',kind='scatter')
@@ -191,13 +188,8 @@ def main():
 
     plt.xlim(0,1)
     plt.ylim(0,1)
-    '''
     plt.show()
-    '''
-    df1['point'] = [(x, y) for x,y in zip(df1['lat'], df1['lon'])]
-    df2['point'] = [(x, y) for x,y in zip(df2['lat'], df2['lon'])]
-    df2['above_lat'],df2['above_lon'] = df1.loc[[closest_point_index(x, list(df1['point'])) for x in df2['point']],['lat','lon']]
-    df2.to_csv('Z:/JDann/Documents/Documents/Julian_Python/SAR_Programs_20181003/test.csv',sep=',')
+
     '''
     print("--- %s seconds ---" % (time.time() - start_time))
 if __name__ == "__main__":

@@ -121,6 +121,71 @@ def hydrosense_data_cruncher(df,site,sar_plot):
     pass
 
 def distancer(lat1,lon1,lat2,lon2):
+    """Function meant to be used in df.apply() in order to compute distance in WGS84 coordinate system
+
+    Parameters
+    ----------
+    lat1 : float
+        latitude for pair one.
+    lon1 : float
+        Longitude for pair one.
+    lat2 : float
+        Latitude for pair two
+    lon2 : float
+        Longitude for pair two.
+
+    Returns
+    -------
+    float
+        Distance in meters
+
+    """
     coords_1 = (lat1, lon1)
     coords_2 = (lat2, lon2)
     return geopy.distance.VincentyDistance(coords_1, coords_2).m
+
+def distance_calc(df,lat1,lon1,lat2,lon2,new_col_name):
+    """Function used in conjunction with distancer to find distance in meters for columns of pandas dataframes that are in WGS84.
+
+    Parameters
+    ----------
+    df : Pandas Dataframe
+        Contains pairs of lat/long
+    lat1 : float
+        latitude for pair one.
+    lon1 : float
+        Longitude for pair one.
+    lat2 : float
+        Latitude for pair two
+    lon2 : float
+        Longitude for pair two.
+    new_col_name : string
+        The column name that will be added to the original dataframe
+
+    Returns
+    -------
+    Pandas Dataframe
+        Dataframe with a new column with 'new_col_name' that has distance in meters between the two coordinates.
+
+
+
+
+    """
+
+    df[new_col_name] = df.apply(lambda x: distancer(x[lat1],x[lon1],x[lat2],x[lon2]), axis=1)
+    return df
+
+def average_SM_at_pixel(df,pixel_index):
+
+    #find unique pixel index values
+    index = np.unique(df[pixel_index].values)
+
+    #groupby pixel index and measurement depth
+    pixel_groups = df1.groupby([pixel_index,'VWC_Measurement_Depth','SAR_Plot'])
+
+    #average and std of VWC values
+    pixel_groups['VWC'].mean()
+    pixel_groups['VWC'].std()
+
+    pixel_groups['above_0.06'].mean()
+    pixel_groups['above_0.06'].std()
