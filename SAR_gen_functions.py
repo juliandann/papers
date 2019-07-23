@@ -4,6 +4,7 @@ import geopy.distance
 import xarray as xr
 import time
 from scipy.spatial.distance import cdist
+import matplotlib.pyplot as plt
 
 def dist(lat1, long1, lat2, long2):
     """Planar geometric distance function
@@ -175,17 +176,140 @@ def distance_calc(df,lat1,lon1,lat2,lon2,new_col_name):
     df[new_col_name] = df.apply(lambda x: distancer(x[lat1],x[lon1],x[lat2],x[lon2]), axis=1)
     return df
 
-def average_SM_at_pixel(df,pixel_index):
-
-    #find unique pixel index values
-    index = np.unique(df[pixel_index].values)
+def average_SM_at_pixel(df,pixel_index,savename='pixel_hydro_vs_above.png'):
 
     #groupby pixel index and measurement depth
-    pixel_groups = df1.groupby([pixel_index,'VWC_Measurement_Depth','SAR_Plot'])
+    pixel_group = df.groupby([pixel_index,'VWC_Measurement_Depth','SAR_Plot'])
 
-    #average and std of VWC values
-    pixel_groups['VWC'].mean()
-    pixel_groups['VWC'].std()
+    #get average of VWC values
+    avg_pix = pixel_group['VWC','above_0.06','above_0.12','above_0.2'].agg(np.mean)
 
-    pixel_groups['above_0.06'].mean()
-    pixel_groups['above_0.06'].std()
+    #getting error of VWC
+    std_vwc = pixel_group['VWC'].agg(np.std)
+
+    avg_pix['VWC_std'] = std_vwc
+
+    avg_pix.reset_index(level=['VWC_Measurement_Depth','SAR_Plot'], inplace=True)
+
+    #plotting 6cm vwc vs. above 6cm closest pixel
+    df_6cm = avg_pix[avg_pix['VWC_Measurement_Depth']==6]
+    df_6cm[['VWC','VWC_std']] =df_6cm[['VWC','VWC_std']]/100.0
+
+    df_12cm = avg_pix[avg_pix['VWC_Measurement_Depth']==12]
+    df_12cm[['VWC','VWC_std']] =df_12cm[['VWC','VWC_std']]/100.0
+
+    df_20cm = avg_pix[avg_pix['VWC_Measurement_Depth']==20]
+    df_20cm[['VWC','VWC_std']] =df_20cm[['VWC','VWC_std']]/100.0
+
+    dfs = [df_6cm,df_12cm,df_20cm]
+    y_col = ['above_0.06','above_0.12','above_0.2']
+
+    #plot settings
+    symbol =['^','s','o']
+    title = ' In-Situ Soil Moisture vs. derived ABoVE SAR Soil Moisture'
+    alpha = [1,0.6,0.4,0.2]
+    fill_style = ['top','full','bottom',]
+    edge_colors =['yellow','purple','orange']
+    size = [10,10,10]
+    save_name = savename
+    fig,ax=plt.subplots(figsize=(15,10))
+
+    set = ["#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", "#FFFF33", "#A65628" ,"#F781BF", "#999999"]
+
+    colors = {'Teller':set[2],'Kougarok':set[1],'Council':set[0],'Barrow':set[3]}
+
+    for df1 in dfs:
+        grouped = df1.groupby('pixel_index')
+        for key,group in grouped:
+            key = group['site'].iloc[0]
+            print(key)
+            print(group[['site','sar_plot']])
+            print(col_name,y_col,colors,size,col_err)
+
+            #average groupby
+            x_data = group[col_name[i]].mean()
+            y_data = group[y_col[i]].mean()
+            xerr = group[col_name[i]].std()
+            yerr = group[y_col[i]].std()
+
+            #group.plot(ax=ax,x=x_data,y=y_data,xerr=xerr,yerr=yerr,kind='scatter',s=size[i],color=colors[key],edgecolors='k',linewidths=1.5 ,marker=MarkerStyle(symbol[i]))#,fillstyle=fill_style[i]),edgecolors=edge_colors[i])#,edgecolors=edge_colors[i],linewidths=2)
+            ax.errorbar(x_data,y_data,xerr=xerr,yerr=yerr,markersize=size[i],color=colors[key],fmt=symbol[i])
+            plt.rcParams['lines.linewidth'] = 0.5
+
+    plt.xlim(0,1)
+    plt.ylim(0,1)
+
+    #creating custom legends
+    legend_elements = [ Line2D([0], [0], marker='^', color='w', label='6cm',
+                          markerfacecolor='grey', markersize=10,markeredgecolor='k',markeredgewidth=2),
+                      Line2D([0], [0], marker='s', color='w', label='12cm',
+                            markerfacecolor='grey', markersize=15,markeredgecolor='k',markeredgewidth=2),
+                        Line2D([0], [0], marker='o', color='w', label='20cm',
+                            markerfacecolor='grey', markersize=25,markeredgecolor='k',markeredgewidth=2)]
+
+    legend_elements2 = [ Line2D([0], [0], marker='o', color='w', label='Teller',
+                          markerfacecolor=set[2], markersize=15,markeredgecolor='k'),
+                      Line2D([0], [0], marker='o', color='w', label='Kougarok',
+                            markerfacecolor=set[1], markersize=15,markeredgecolor='k'),
+                        Line2D([0], [0], marker='o', color='w', label='Council',
+                            markerfacecolor=set[0], markersize=15,markeredgecolor='k'),
+                            Line2D([0], [0], marker='o', color='w', label='Barrow',
+                                markerfacecolor=set[3], markersize=15,markeredgecolor='k')]
+
+    leg = plt.legend(handles=legend_elements, loc='upper right',prop={'size':20})
+    ax.add_artist(leg)
+
+    ax.legend(handles = legend_elements2, loc='upper left',prop={'size':16})
+    #ax.add_artist(leg2)
+
+    #create 1:1 line
+    y =np.linspace(0,1,100)
+    x = np.linspace(0,1,100)
+    plt.plot(x,y,ls='--',c='k')
+    plt.xlabel('Volumetric Water Content (%/100)',fontsize=18)
+    plt.ylabel('ABoVE SAR P-Band Flight (%/100)',fontsize=18)
+    plt.title(title,fontsize=22)
+    #plt.savefig(save_name,dpi=500)
+    plt.show()
+    #plt.close()
+
+
+
+
+    '''ax= df_6cm.plot(x='VWC',y='above_0.06',c='b',label='6 cm',kind='scatter')
+    df_12cm.plot( x='VWC',y='above_0.12',color='g',ax = ax,label='12 cm',kind='scatter')
+    df_20cm.plot( x='VWC',y='above_0.2',color='r',ax = ax,label='20 cm',kind='scatter')
+
+    x = np.arange(-0.2,1.2,0.1)
+    plt.plot(x,x,'k--')
+    plt.xlim(0,1)
+    plt.ylim(0,1)
+    plt.show()'''
+
+
+
+def adjusting_SAR_Plot_names(df,column,prefix,replacement):
+    """Short summary.
+
+    Parameters
+    ----------
+    df : Pandas Dataframe
+        Data
+    column : string
+        Column within dataframe
+    prefix : string
+        single element or list of strings that are the start of a value in the column you wish to change
+    replacement : string
+        Replacement value for the prefix
+
+    Returns
+    -------
+    Pandas Dataframe
+        Dataframe with changed column.
+
+    """
+    i = 0
+    for pre in prefix:
+        df[column][df[column].str.startswith(pre)] = replacement[i]
+        i=i+1
+    return df

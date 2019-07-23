@@ -166,18 +166,18 @@ def main():
     df1 = distance_calc(df1,'Latitude','Longitude','above_lat','above_lon','dist')
 
     df1.to_csv('/Users/juliandann/Documents/LANL/SAR_DATA_AND_Programs/20190719/closest_distance.csv')
+
     '''
+
+    #uncomment to get replace SAR_Plot names for consecutive days at Barrow
+    '''
+    df1 = adjusting_SAR_Plot_names(df1,'SAR_Plot',['Barrow_SAR_FC','Barrow_SAR_HC','Barrow_SAR_LC'],['BW_SAR_FC','BW_SAR_HC','BW_SAR_LC'])
+    df1.to_csv(closest_dist)
+    '''
+
     df1 = pd.read_csv(closest_dist,sep=',')
 
-    #plotting 6cm vwc vs. above 6cm closest pixel
-    df_6cm = df1[df1['VWC_Measurement_Depth']==6]
-    df_6cm['VWC'] =df_6cm['VWC']/100.0
 
-    df_12cm = df1[df1['VWC_Measurement_Depth']==12]
-    df_12cm['VWC'] =df_12cm['VWC']/100.0
-
-    df_20cm = df1[df1['VWC_Measurement_Depth']==20]
-    df_20cm['VWC'] =df_20cm['VWC']/100.0
 
     average_SM_at_pixel(df1,'above_Index')
 
