@@ -122,7 +122,7 @@ def compare_discrete_vs_hydrosense(ABoVE_file,VWC_file,depth='20',combine=False)
     #plt.close()
 
 def main():
-    '''
+
     #uncomment for filepaths on work computer
     TL = 'Z:/AKSeward/2017_SAR/ABoVE_Soil_Moisture_Products/JBD_Products/discrete_6_12_20_TL.csv'
     KG ='Z:/AKSeward/2017_SAR/ABoVE_Soil_Moisture_Products/JBD_Products/discrete_6_12_20_KG.csv'
@@ -130,8 +130,16 @@ def main():
     BW ='Z:/AKSeward/2017_SAR/ABoVE_Soil_Moisture_Products/JBD_Products/discrete_6_12_20_BW.csv'
     ABoVE_data = 'Z:/AKSeward/2017_SAR/ABoVE_Soil_Moisture_Products/JBD_Products/discrete_all_sites.csv'
     VWC_data= 'Z:/AKSeward/Data/Excel/SAR/discrete_data_final_20190306.csv'
-    '''
+    all_vwc_data = 'Z:/AKSeward/2017_SAR/ABoVE_Soil_Moisture_Products/JBD_Products/vwc_all.csv'
+    closest_dist = 'Z:/AKSeward/2017_SAR/ABoVE_Soil_Moisture_Products/JBD_Products/closest_dist.csv'
+    all_td_SP = 'Z:/AKSeward/2017_SAR/SAR_download_20181003/data/thaw_depth_seward_2017.csv'
+    closest_dist_td = 'Z:/AKSeward/2017_SAR/ABoVE_Soil_Moisture_Products/JBD_Products/closest_dist_td.csv'
+    td_per_pixel = 'Z:/AKSeward/2017_SAR/ABoVE_Soil_Moisture_Products/JBD_Products/avg_td_per_pixel.csv'
+    landcover = 'Z:/AKSeward/2017_SAR/ABoVE_Soil_Moisture_Products/JBD_Products/gaplandfire_pixels.csv'
+    all_ABoVE = 'Z:/AKSeward/2017_SAR/ABoVE_Soil_Moisture_Products/P_PolSAR_ALP_seward_170817_171010_01.nc4'
+    landcover_stats = 'Z:/AKSeward/2017_SAR/ABoVE_Soil_Moisture_Products/JBD_Products/GAPLANDFIRE_60m_statistics.csv'
 
+    '''
     # uncomment for filepaths on personal computer
     TL = '/Users/juliandann/Documents/LANL/SAR_DATA_AND_Programs/20190719/discrete_6_12_20_TL.csv'
     KG ='/Users/juliandann/Documents/LANL/SAR_DATA_AND_Programs/20190719/discrete_6_12_20_KG.csv'
@@ -141,7 +149,8 @@ def main():
     VWC_data = '/Users/juliandann/Documents/LANL/SAR_DATA_AND_Programs/20190719/all_vwc_combined.csv'
     closest_pts = '/Users/juliandann/Documents/LANL/SAR_DATA_AND_Programs/20190719/closest_points.csv'
     closest_dist = '/Users/juliandann/Documents/LANL/SAR_DATA_AND_Programs/20190719/closest_distance.csv'
-
+    all_vwc_data = '/Users/juliandann/Documents/LANL/SAR_DATA_AND_Programs/20190719/all_vwc_combined.csv'
+    '''
     '''
     #uncomment for making combined files
     files = [TL,KG,CN,BW]
@@ -149,37 +158,47 @@ def main():
 
 
     vwc_files = glob.glob('/Users/juliandann/Documents/LANL/SAR_DATA_AND_Programs/SAR_DATA_AND_Programs/data/vwc*.csv')
-    csv_combined_file_maker(vwc_files,combined_filepath='/Users/juliandann/Documents/LANL/SAR_DATA_AND_Programs/20190719/all_vwc_combined.csv')
+    csv_combined_file_maker(vwc_files,combined_filepath=all_vwc_data)
     '''
+
     #read in the data
-    df1 = pd.read_csv(VWC_data,sep=',')
-    df2 = pd.read_csv(ABoVE_data,sep=',')
+    #ds = xr.open_dataset(all_ABoVE)
+    #df1 = ds.to_dataframe()
+
+    #df1 = pd.read_csv(ABoVE_data,sep=',')
+    df2 = pd.read_csv(landcover_stats,sep=',')
+    #df1 = pd.read_csv(all_td_SP,sep=',')
+    #engstrom_SM(df2,'epsilon1_aug')
+    #df1 = pd.read_csv(td_per_pixel,sep=',')
+    #td_comparison(df1,'above_Index','Thaw_Depth_mean','above_alt','above_alt_uncertainty','Z:/JDann/Documents/Documents/Julian_Python/SAR_programs_20181003/Figures/ALT/')
+
     '''
     #calculate closest point in df2 to the value in df1
-    df1 = closest_point_index(df1,df2,'Latitude','Longitude','lat','lon','lat','lon','0.06','0.12','0.2','Index',prefix='above')
+    #df1 = closest_point_index(df1,df2,'lat','lon','Latitude','Longitude','Latitude','Longitude','0.06','0.12','0.2','Index','alt','alt_uncertainty','epsilon1_aug','epsilon1_aug_uncertainty','h','h_uncertainty','mv1_aug','mv1_aug_uncertainty','z1_aug','z1_aug_uncertainty','epsilon2','epsilon2_uncertainty','mv2','mv2_uncertainty',prefix='above')
+    df1 = closest_point_index(df1,df2,'lat','lon','Latitude','Longitude','Latitude','Longitude','grid_code','pointid',prefix='lc')
 
     #saving for speed
-    #df1.to_csv('/Users/juliandann/Documents/LANL/SAR_DATA_AND_Programs/20190719/closest_points.csv')
+    df1.to_csv('Z:/AKSeward/2017_SAR/ABoVE_Soil_Moisture_Products/JBD_Products/all_above_closest_gaplandfire.csv')
 
 
     #calulating distance between coordinates
     df1 = distance_calc(df1,'Latitude','Longitude','above_lat','above_lon','dist')
 
-    df1.to_csv('/Users/juliandann/Documents/LANL/SAR_DATA_AND_Programs/20190719/closest_distance.csv')
-
+    df1.to_csv('Z:/AKSeward/2017_SAR/ABoVE_Soil_Moisture_Products/JBD_Products/closest_dist_td.csv')
     '''
 
+    '''
     #uncomment to get replace SAR_Plot names for consecutive days at Barrow
-    '''
+
     df1 = adjusting_SAR_Plot_names(df1,'SAR_Plot',['Barrow_SAR_FC','Barrow_SAR_HC','Barrow_SAR_LC'],['BW_SAR_FC','BW_SAR_HC','BW_SAR_LC'])
     df1.to_csv(closest_dist)
     '''
 
-    df1 = pd.read_csv(closest_dist,sep=',')
+    #df1 = pd.read_csv(closest_dist,sep=',')
+    landcover_boxplots(df2,'Ecosystem_LU','NVC_CLASS','above_alt_mean','above_alt_std','above_alt_count')
 
 
-
-    average_SM_at_pixel(df1,'above_Index')
+    #average_SM_at_pixel(df1,'above_Index',savename='Z:/JDann/Documents/Documents/Julian_Python/SAR_programs_20181003/Figures/above_vs_hydro/per_pixel_2017_aug.png')
 
     '''
     ax= df_6cm.plot(x='VWC',y='above_0.06',label='6 cm',kind='scatter')
@@ -191,6 +210,7 @@ def main():
     plt.show()
 
     '''
+
     print("--- %s seconds ---" % (time.time() - start_time))
 if __name__ == "__main__":
     main()
